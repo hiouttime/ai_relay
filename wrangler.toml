@@ -11,5 +11,4 @@ directory = "web/dist"
 not_found_handling = "single-page-application"
 
 [vars]
-# 在这里添加你的环境变量，比如后端 API 地址
-# API_BASE_URL = "https://ai_relay.henhe.li"
+API_BASE_URL = "https://ai_relay.henhe.li"

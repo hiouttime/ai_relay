@@ -69,7 +69,6 @@
           :data="logs.list.slice(0, 10)"
           :columns="logColumns"
           :loading="loading"
-          :pagination="false"
         >
           <template #model_name="{ row }">
             <t-tag theme="primary" variant="outline">{{ row.model_name }}</t-tag>

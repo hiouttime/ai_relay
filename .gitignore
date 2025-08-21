@@ -6,7 +6,6 @@ upload
 build
 *.db-journal
 web/dist
-.env
 .DS_Store
 .claude
 CLAUDE.md

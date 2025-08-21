@@ -1,0 +1,19 @@
+name = "ai-relay-frontend"
+compatibility_date = "2024-08-21"
+
+[build]
+command = "cd web && npm ci && npm run build"
+cwd = "."
+watch_dir = "web/src"
+
+[build.upload]
+format = "static-assets"
+dir = "web/dist"
+
+[[routes]]
+pattern = "/*"
+custom_domain = true
+
+[vars]
+# 在这里添加你的环境变量，比如后端 API 地址
+# API_BASE_URL = "https://your-backend-domain.com"

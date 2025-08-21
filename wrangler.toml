@@ -1,18 +1,14 @@
 name = "relay"
-compatibility_date = "2024-08-21"
+compatibility_date = "2025-01-15"
 
 [build]
 command = "cd web && npm ci && npm run build"
 cwd = "."
 watch_dir = "web/src"
 
-[build.upload]
-format = "static-assets"
-dir = "web/dist"
-
-[[routes]]
-pattern = "/*"
-custom_domain = true
+[assets]
+directory = "web/dist"
+not_found_handling = "single-page-application"
 
 [vars]
 # 在这里添加你的环境变量，比如后端 API 地址

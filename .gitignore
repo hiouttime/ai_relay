@@ -13,3 +13,4 @@ CLAUDE.md
 out/
 redis_data
 app_logs
+.env

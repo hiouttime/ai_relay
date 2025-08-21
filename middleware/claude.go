@@ -93,7 +93,7 @@ func getApiKeyFromHeaders(c *gin.Context) string {
 
 	// 3. 检查 Authorization Bearer Token
 	if authHeader := c.GetHeader("Authorization"); authHeader != "" {
-		if strings.HasPrefix(strings.ToLower(authHeader), "Bearer ") {
+		if strings.HasPrefix(strings.ToLower(authHeader), "bearer ") {
 			return strings.TrimSpace(authHeader[7:])
 		}
 	}

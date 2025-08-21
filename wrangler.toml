@@ -9,6 +9,3 @@ watch_dir = "web/src"
 [assets]
 directory = "web/dist"
 not_found_handling = "single-page-application"
-
-[vars]
-API_BASE_URL = "https://ai_relay.henhe.li"

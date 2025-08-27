@@ -10,8 +10,6 @@ import (
 	"context"
 	"crypto/tls"
 	"errors"
-	"github.com/gin-gonic/gin"
-	"github.com/tidwall/sjson"
 	"io"
 	"log"
 	"net/http"
@@ -20,6 +18,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -33,14 +34,14 @@ const (
 
 // Console错误类型定义
 var (
-	consoleErrRequestBodyRead = gin.H{"error": map[string]interface{}{"type": "request_body_error", "message": "Failed to read request body"}}
-	consoleErrCreateRequest   = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "Failed to create request"}}
-	consoleErrProxyConfig     = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
-	consoleErrTimeout         = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "Request was canceled or timed out"}}
-	consoleErrNetworkError    = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "Failed to execute request"}}
-	consoleErrDecompression   = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "Failed to create decompressor"}}
-	consoleErrResponseRead    = gin.H{"error": map[string]interface{}{"type": "response_read_error", "message": "Failed to read error response"}}
-	consoleErrResponseError   = gin.H{"error": map[string]interface{}{"type": "response_error", "message": "Request failed"}}
+	consoleErrRequestBodyRead = gin.H{"error": map[string]any{"type": "request_body_error", "message": "Failed to read request body"}}
+	consoleErrCreateRequest   = gin.H{"error": map[string]any{"type": "internal_server_error", "message": "Failed to create request"}}
+	consoleErrProxyConfig     = gin.H{"error": map[string]any{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
+	consoleErrTimeout         = gin.H{"error": map[string]any{"type": "timeout_error", "message": "Request was canceled or timed out"}}
+	consoleErrNetworkError    = gin.H{"error": map[string]any{"type": "network_error", "message": "Failed to execute request"}}
+	consoleErrDecompression   = gin.H{"error": map[string]any{"type": "decompression_error", "message": "Failed to create decompressor"}}
+	consoleErrResponseRead    = gin.H{"error": map[string]any{"type": "response_read_error", "message": "Failed to read error response"}}
+	consoleErrResponseError   = gin.H{"error": map[string]any{"type": "response_error", "message": "Request failed"}}
 )
 
 // HandleClaudeConsoleRequest 处理Claude Console平台的请求
@@ -78,7 +79,7 @@ func HandleClaudeConsoleRequest(c *gin.Context, account *model.Account) {
 	if resp.StatusCode >= consoleStatusBadRequest {
 		accountService.UpdateAccountStatus(account, resp.StatusCode, nil)
 		c.JSON(http.StatusServiceUnavailable, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "response_error",
 				"message": "Request failed with status " + strconv.Itoa(resp.StatusCode),
 			},
@@ -306,7 +307,7 @@ func saveConsoleRequestLog(startTime time.Time, apiKey *model.ApiKey, account *m
 
 // appendConsoleErrorMessage 为Console错误消息追加详细信息
 func appendConsoleErrorMessage(baseError gin.H, message string) gin.H {
-	errorMap := baseError["error"].(map[string]interface{})
+	errorMap := baseError["error"].(map[string]any)
 	errorMap["message"] = errorMap["message"].(string) + ": " + message
 	return gin.H{"error": errorMap}
 }

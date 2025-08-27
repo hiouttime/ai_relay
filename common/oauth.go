@@ -182,11 +182,11 @@ func (o *OAuthHelper) ParseCallbackURL(input string) (string, error) {
 }
 
 // CreateTokenExchangeParams 创建token交换参数
-func (o *OAuthHelper) CreateTokenExchangeParams(authorizationCode, codeVerifier, state string) map[string]interface{} {
+func (o *OAuthHelper) CreateTokenExchangeParams(authorizationCode, codeVerifier, state string) map[string]any {
 	// 清理授权码，移除URL片段
 	cleanedCode := strings.Split(strings.Split(authorizationCode, "#")[0], "&")[0]
 
-	return map[string]interface{}{
+	return map[string]any{
 		"grant_type":    "authorization_code",
 		"client_id":     o.config.ClientID,
 		"code":          cleanedCode,
@@ -308,7 +308,7 @@ func (o *OAuthHelper) ExchangeCodeForTokens(authorizationCode, codeVerifier, sta
 		SysError(fmt.Sprintf("OAuth token exchange failed - Status: %d, Body: %s", resp.StatusCode, string(body)))
 
 		// 尝试解析错误响应
-		var errorResp map[string]interface{}
+		var errorResp map[string]any
 		if json.Unmarshal(body, &errorResp) == nil {
 			if errorMsg, ok := errorResp["error"].(string); ok {
 				errorDesc := ""
@@ -323,7 +323,7 @@ func (o *OAuthHelper) ExchangeCodeForTokens(authorizationCode, codeVerifier, sta
 	}
 
 	// 解析成功响应
-	var tokenResp map[string]interface{}
+	var tokenResp map[string]any
 	if err := json.Unmarshal(body, &tokenResp); err != nil {
 		return nil, fmt.Errorf("failed to parse token response: %w", err)
 	}

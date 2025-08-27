@@ -12,7 +12,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/tidwall/sjson"
 	"io"
 	"log"
 	"net/http"
@@ -21,6 +20,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/tidwall/sjson"
 
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
@@ -49,17 +50,17 @@ const (
 
 // 错误类型定义
 var (
-	errRequestBody     = gin.H{"error": map[string]interface{}{"type": "request_error", "message": "Incorrect request body"}}
-	errMissingModel    = gin.H{"error": map[string]interface{}{"type": "request_error", "message": "The model field is missing in the request body"}}
-	errModelNotAllowed = gin.H{"error": map[string]interface{}{"type": "request_error", "message": "This model is not allowed."}}
-	errAuthFailed      = gin.H{"error": map[string]interface{}{"type": "authentication_error", "message": "Failed to get valid access token"}}
-	errCreateRequest   = gin.H{"error": map[string]interface{}{"type": "internal_server_error", "message": "Failed to create request"}}
-	errProxyConfig     = gin.H{"error": map[string]interface{}{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
-	errTimeout         = gin.H{"error": map[string]interface{}{"type": "timeout_error", "message": "Request was canceled or timed out"}}
-	errNetworkError    = gin.H{"error": map[string]interface{}{"type": "network_error", "message": "Failed to execute request"}}
-	errDecompression   = gin.H{"error": map[string]interface{}{"type": "decompression_error", "message": "Failed to create decompressor"}}
-	errResponseRead    = gin.H{"error": map[string]interface{}{"type": "response_read_error", "message": "Failed to read error response"}}
-	errResponseError   = gin.H{"error": map[string]interface{}{"type": "response_error", "message": "Request failed"}}
+	errRequestBody     = gin.H{"error": map[string]any{"type": "request_error", "message": "Incorrect request body"}}
+	errMissingModel    = gin.H{"error": map[string]any{"type": "request_error", "message": "The model field is missing in the request body"}}
+	errModelNotAllowed = gin.H{"error": map[string]any{"type": "request_error", "message": "This model is not allowed."}}
+	errAuthFailed      = gin.H{"error": map[string]any{"type": "authentication_error", "message": "Failed to get valid access token"}}
+	errCreateRequest   = gin.H{"error": map[string]any{"type": "internal_server_error", "message": "Failed to create request"}}
+	errProxyConfig     = gin.H{"error": map[string]any{"type": "proxy_configuration_error", "message": "Invalid proxy URI"}}
+	errTimeout         = gin.H{"error": map[string]any{"type": "timeout_error", "message": "Request was canceled or timed out"}}
+	errNetworkError    = gin.H{"error": map[string]any{"type": "network_error", "message": "Failed to execute request"}}
+	errDecompression   = gin.H{"error": map[string]any{"type": "decompression_error", "message": "Failed to create decompressor"}}
+	errResponseRead    = gin.H{"error": map[string]any{"type": "response_read_error", "message": "Failed to read error response"}}
+	errResponseError   = gin.H{"error": map[string]any{"type": "response_error", "message": "Request failed"}}
 )
 
 // OAuthTokenResponse 表示OAuth token刷新响应
@@ -86,7 +87,7 @@ func HandleClaudeRequest(c *gin.Context, account *model.Account) {
 		}
 	}
 
-	accessToken, err := getValidAccessToken(account)
+	accessToken, err := GetValidAccessToken(account)
 	if err != nil {
 		log.Printf("获取有效访问token失败: %v", err)
 		c.JSON(http.StatusInternalServerError, appendErrorMessage(errAuthFailed, err.Error()))
@@ -327,7 +328,7 @@ func handleErrorResponse(c *gin.Context, resp *http.Response, responseReader io.
 	handleRateLimit(resp, responseBody, account)
 
 	c.JSON(http.StatusServiceUnavailable, gin.H{
-		"error": map[string]interface{}{
+		"error": map[string]any{
 			"type":    "response_error",
 			"message": "Request failed with status " + strconv.Itoa(resp.StatusCode),
 		},
@@ -453,7 +454,7 @@ func saveRequestLog(startTime time.Time, apiKey *model.ApiKey, account *model.Ac
 
 // appendErrorMessage 为错误消息追加详细信息
 func appendErrorMessage(baseError gin.H, message string) gin.H {
-	errorMap := baseError["error"].(map[string]interface{})
+	errorMap := baseError["error"].(map[string]any)
 	errorMap["message"] = errorMap["message"].(string) + ": " + message
 	return gin.H{"error": errorMap}
 }
@@ -464,7 +465,7 @@ func TestsHandleClaudeRequest(account *model.Account) (int, string) {
 	body, _ := sjson.SetBytes([]byte(TestRequestBody), "stream", true)
 
 	// 获取有效的访问token
-	accessToken, err := getValidAccessToken(account)
+	accessToken, err := GetValidAccessToken(account)
 	if err != nil {
 		return http.StatusInternalServerError, "Failed to get valid access token: " + err.Error()
 	}
@@ -535,8 +536,8 @@ func buildClaudeAPIHeaders(accessToken string) map[string]string {
 	}
 }
 
-// getValidAccessToken 获取有效的访问token，如果过期则自动刷新
-func getValidAccessToken(account *model.Account) (string, error) {
+// GetValidAccessToken 获取有效的访问token，如果过期则自动刷新
+func GetValidAccessToken(account *model.Account) (string, error) {
 	// 检查当前token是否存在
 	if account.AccessToken == "" {
 		return "", errors.New("账号缺少访问token")
@@ -596,7 +597,7 @@ func getValidAccessToken(account *model.Account) (string, error) {
 
 // refreshToken 使用refresh token获取新的access token
 func refreshToken(account *model.Account) (accessToken, refreshToken string, expiresAt int64, err error) {
-	payload := map[string]interface{}{
+	payload := map[string]any{
 		"grant_type":    "refresh_token",
 		"refresh_token": account.RefreshToken,
 		"client_id":     ClaudeOAuthClientID,

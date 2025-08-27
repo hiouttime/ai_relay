@@ -79,7 +79,7 @@ func GetTasksByStatus(status string) ([]Task, error) {
 }
 
 func UpdateTaskStatus(id uint, status string) error {
-	updates := map[string]interface{}{
+	updates := map[string]any{
 		"status": status,
 	}
 	if status == "completed" {

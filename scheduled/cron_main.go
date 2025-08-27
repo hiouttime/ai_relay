@@ -101,7 +101,7 @@ func (s *CronService) resetDailyStats() {
 
 // resetAccountStats 重置账户今日统计数据
 func (s *CronService) resetAccountStats() error {
-	result := model.DB.Model(&model.Account{}).Where("1 = 1").Updates(map[string]interface{}{
+	result := model.DB.Model(&model.Account{}).Where("1 = 1").Updates(map[string]any{
 		"today_usage_count":                 0,
 		"today_input_tokens":                0,
 		"today_output_tokens":               0,
@@ -120,7 +120,7 @@ func (s *CronService) resetAccountStats() error {
 
 // resetApiKeyStats 重置API Key今日统计数据
 func (s *CronService) resetApiKeyStats() error {
-	result := model.DB.Model(&model.ApiKey{}).Where("1 = 1").Updates(map[string]interface{}{
+	result := model.DB.Model(&model.ApiKey{}).Where("1 = 1").Updates(map[string]any{
 		"today_usage_count":                 0,
 		"today_input_tokens":                0,
 		"today_output_tokens":               0,
@@ -296,10 +296,10 @@ func (s *CronService) ManualCleanExpiredLogs() (int64, error) {
 	return deletedCount, nil
 }
 
-// checkRateLimitExpiredAccounts 检查限流过期账号
+// checkRateLimitExpiredAccounts 检查限流过期账号和Token过期情况
 func (s *CronService) checkRateLimitExpiredAccounts() {
 	startTime := time.Now()
-	common.SysLog("Starting rate limit expired accounts check task")
+	common.SysLog("Starting rate limit expired accounts and token expiry check task")
 
 	// 筛选current_status==3且active_status==1的账号
 	var rateLimitedAccounts []model.Account
@@ -324,7 +324,7 @@ func (s *CronService) checkRateLimitExpiredAccounts() {
 		// 检查限流结束时间是否已过期
 		if account.RateLimitEndTime != nil && now.After(time.Time(*account.RateLimitEndTime)) {
 			// 限流时间已过，将账号状态恢复为正常并清空限流结束时间
-			err := model.DB.Model(&account).Updates(map[string]interface{}{
+			err := model.DB.Model(&account).Updates(map[string]any{
 				"current_status":      1,
 				"rate_limit_end_time": nil,
 			}).Error
@@ -343,4 +343,47 @@ func (s *CronService) checkRateLimitExpiredAccounts() {
 
 	duration := time.Since(startTime)
 	common.SysLog(fmt.Sprintf("Rate limit expired accounts check task completed in %s. Recovered: %d", duration.String(), recoveredCount))
+	
+	// 检查并刷新即将过期的Token
+	s.checkAndRefreshExpiredTokens()
+}
+
+// checkAndRefreshExpiredTokens 检查并刷新即将过期的Token
+func (s *CronService) checkAndRefreshExpiredTokens() {
+	startTime := time.Now()
+	common.SysLog("Starting token expiry check and refresh task")
+	
+	// 查询所有启用的Claude账号
+	var activeAccounts []model.Account
+	err := model.DB.Where("active_status = ? AND platform_type = ?", 1, constant.PlatformClaude).Find(&activeAccounts).Error
+	if err != nil {
+		common.SysError("Failed to query active accounts for token refresh: " + err.Error())
+		return
+	}
+	
+	if len(activeAccounts) == 0 {
+		common.SysLog("No active Claude accounts found for token refresh check")
+		return
+	}
+	
+	common.SysLog(fmt.Sprintf("Found %d active Claude accounts to check", len(activeAccounts)))
+	
+	refreshedCount := 0
+	failedCount := 0
+	
+	for _, account := range activeAccounts {
+		// 直接调用getValidAccessToken，它会自动处理过期检查和刷新
+		_, err := relay.GetValidAccessToken(&account)
+		if err != nil {
+			common.SysError(fmt.Sprintf("Failed to refresh token for account %s (ID: %d): %v", 
+				account.Name, account.ID, err))
+			failedCount++
+		} else {
+			refreshedCount++
+		}
+	}
+	
+	duration := time.Since(startTime)
+	common.SysLog(fmt.Sprintf("Token refresh task completed in %s. Checked: %d, Failed: %d", 
+		duration.String(), refreshedCount, failedCount))
 }

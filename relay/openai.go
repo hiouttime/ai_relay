@@ -9,7 +9,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"io"
 	"log"
 	"math/rand"
@@ -18,24 +17,26 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // Claude API 类型定义
 type ClaudeTool struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description,omitempty"`
-	InputSchema interface{} `json:"input_schema"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	InputSchema any    `json:"input_schema"`
 }
 
 type ClaudeContentBlock struct {
-	Type      string                 `json:"type"`
-	Text      string                 `json:"text,omitempty"`
-	Source    *ClaudeContentSource   `json:"source,omitempty"`
-	ID        string                 `json:"id,omitempty"`
-	Name      string                 `json:"name,omitempty"`
-	Input     map[string]interface{} `json:"input,omitempty"`
-	ToolUseID string                 `json:"tool_use_id,omitempty"`
-	Content   interface{}            `json:"content,omitempty"`
+	Type      string               `json:"type"`
+	Text      string               `json:"text,omitempty"`
+	Source    *ClaudeContentSource `json:"source,omitempty"`
+	ID        string               `json:"id,omitempty"`
+	Name      string               `json:"name,omitempty"`
+	Input     map[string]any       `json:"input,omitempty"`
+	ToolUseID string               `json:"tool_use_id,omitempty"`
+	Content   any                  `json:"content,omitempty"`
 }
 
 type ClaudeContentSource struct {
@@ -45,8 +46,8 @@ type ClaudeContentSource struct {
 }
 
 type ClaudeMessage struct {
-	Role    string      `json:"role"`
-	Content interface{} `json:"content"`
+	Role    string `json:"role"`
+	Content any    `json:"content"`
 }
 
 type ClaudeToolChoice struct {
@@ -55,24 +56,24 @@ type ClaudeToolChoice struct {
 }
 
 type ClaudeRequest struct {
-	Model         string                 `json:"model"`
-	Messages      []ClaudeMessage        `json:"messages"`
-	System        interface{}            `json:"system,omitempty"`
-	MaxTokens     int                    `json:"max_tokens"`
-	StopSequences []string               `json:"stop_sequences,omitempty"`
-	Stream        bool                   `json:"stream,omitempty"`
-	Temperature   *float64               `json:"temperature,omitempty"`
-	TopP          *float64               `json:"top_p,omitempty"`
-	TopK          *int                   `json:"top_k,omitempty"`
-	Tools         []ClaudeTool           `json:"tools,omitempty"`
-	ToolChoice    *ClaudeToolChoice      `json:"tool_choice,omitempty"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
+	Model         string            `json:"model"`
+	Messages      []ClaudeMessage   `json:"messages"`
+	System        any               `json:"system,omitempty"`
+	MaxTokens     int               `json:"max_tokens"`
+	StopSequences []string          `json:"stop_sequences,omitempty"`
+	Stream        bool              `json:"stream,omitempty"`
+	Temperature   *float64          `json:"temperature,omitempty"`
+	TopP          *float64          `json:"top_p,omitempty"`
+	TopK          *int              `json:"top_k,omitempty"`
+	Tools         []ClaudeTool      `json:"tools,omitempty"`
+	ToolChoice    *ClaudeToolChoice `json:"tool_choice,omitempty"`
+	Metadata      map[string]any    `json:"metadata,omitempty"`
 }
 
 // OpenAI API 类型定义
 type OpenAIMessage struct {
 	Role       string           `json:"role"`
-	Content    interface{}      `json:"content"`
+	Content    any              `json:"content"`
 	ToolCalls  []OpenAIToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string           `json:"tool_call_id,omitempty"`
 }
@@ -94,9 +95,9 @@ type OpenAITool struct {
 }
 
 type OpenAIFunctionDef struct {
-	Name        string      `json:"name"`
-	Description string      `json:"description,omitempty"`
-	Parameters  interface{} `json:"parameters"`
+	Name        string `json:"name"`
+	Description string `json:"description,omitempty"`
+	Parameters  any    `json:"parameters"`
 }
 
 type OpenAIToolChoice struct {
@@ -113,7 +114,7 @@ type OpenAIRequest struct {
 	Stop        []string        `json:"stop,omitempty"`
 	Stream      bool            `json:"stream,omitempty"`
 	Tools       []OpenAITool    `json:"tools,omitempty"`
-	ToolChoice  interface{}     `json:"tool_choice,omitempty"`
+	ToolChoice  any             `json:"tool_choice,omitempty"`
 }
 
 // OpenAI 响应类型定义
@@ -175,7 +176,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	body, err := io.ReadAll(c.Request.Body)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "request_body_error",
 				"message": "Failed to read request body: " + err.Error(),
 			},
@@ -187,7 +188,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	var claudeReq ClaudeRequest
 	if err := json.Unmarshal(body, &claudeReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "json_parse_error",
 				"message": "Failed to parse request JSON: " + err.Error(),
 			},
@@ -198,7 +199,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	// 直接使用账号配置的请求地址和默认模型
 	if account.RequestURL == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "configuration_error",
 				"message": "账号未配置请求地址",
 			},
@@ -221,7 +222,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	openaiBody, err := json.Marshal(openaiReq)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "json_marshal_error",
 				"message": "Failed to marshal OpenAI request: " + err.Error(),
 			},
@@ -234,7 +235,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	req, err := http.NewRequestWithContext(ctx, "POST", openaiURL, bytes.NewBuffer(openaiBody))
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "internal_server_error",
 				"message": "Failed to create request: " + err.Error(),
 			},
@@ -261,7 +262,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 		proxyURL, err := url.Parse(account.ProxyURI)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": map[string]interface{}{
+				"error": map[string]any{
 					"type":    "proxy_configuration_error",
 					"message": "Invalid proxy URI: " + err.Error(),
 				},
@@ -281,7 +282,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 	if err != nil {
 		log.Printf("OpenAI API request failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": map[string]interface{}{
+			"error": map[string]any{
 				"type":    "network_error",
 				"message": "Failed to execute request: " + err.Error(),
 			},
@@ -305,7 +306,7 @@ func HandleOpenAIRequest(c *gin.Context, account *model.Account) {
 
 // extractSystemMessage 从system字段中提取系统消息文本
 // 支持字符串和数组格式的system字段
-func extractSystemMessage(systemField interface{}) string {
+func extractSystemMessage(systemField any) string {
 	if systemField == nil {
 		return ""
 	}
@@ -314,11 +315,11 @@ func extractSystemMessage(systemField interface{}) string {
 	case string:
 		// 直接字符串格式
 		return s
-	case []interface{}:
+	case []any:
 		// 数组格式，提取所有text内容
 		var textParts []string
 		for _, item := range s {
-			if itemMap, ok := item.(map[string]interface{}); ok {
+			if itemMap, ok := item.(map[string]any); ok {
 				if itemType, exists := itemMap["type"]; exists && itemType == "text" {
 					if text, ok := itemMap["text"].(string); ok {
 						textParts = append(textParts, text)
@@ -371,14 +372,14 @@ func applyModelMapping(claudeModel, modelMapping, defaultTargetModel string) str
 }
 
 // recursivelyCleanSchema 递归清理JSON Schema，使其兼容严格API如Google Gemini
-func recursivelyCleanSchema(schema interface{}) interface{} {
+func recursivelyCleanSchema(schema any) any {
 	if schema == nil {
 		return schema
 	}
 
 	switch s := schema.(type) {
-	case map[string]interface{}:
-		newSchema := make(map[string]interface{})
+	case map[string]any:
+		newSchema := make(map[string]any)
 		for key, value := range s {
 			if key == "$schema" || key == "additionalProperties" {
 				continue
@@ -402,8 +403,8 @@ func recursivelyCleanSchema(schema interface{}) interface{} {
 			}
 		}
 		return newSchema
-	case []interface{}:
-		newSlice := make([]interface{}, len(s))
+	case []any:
+		newSlice := make([]any, len(s))
 		for i, item := range s {
 			newSlice[i] = recursivelyCleanSchema(item)
 		}
@@ -430,12 +431,12 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 	for _, message := range claudeReq.Messages {
 		if message.Role == "user" {
 			// 处理用户消息
-			if contentBlocks, ok := message.Content.([]interface{}); ok {
-				var toolResults []interface{}
-				var otherContent []interface{}
+			if contentBlocks, ok := message.Content.([]any); ok {
+				var toolResults []any
+				var otherContent []any
 
 				for _, block := range contentBlocks {
-					if blockMap, ok := block.(map[string]interface{}); ok {
+					if blockMap, ok := block.(map[string]any); ok {
 						if blockMap["type"] == "tool_result" {
 							toolResults = append(toolResults, blockMap)
 						} else {
@@ -446,7 +447,7 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 
 				// 添加工具结果消息
 				for _, result := range toolResults {
-					if resultMap, ok := result.(map[string]interface{}); ok {
+					if resultMap, ok := result.(map[string]any); ok {
 						var content string
 						if resultMap["content"] != nil {
 							if str, ok := resultMap["content"].(string); ok {
@@ -467,18 +468,18 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 
 				// 添加其他用户内容
 				if len(otherContent) > 0 {
-					var convertedContent []map[string]interface{}
+					var convertedContent []map[string]any
 					for _, block := range otherContent {
-						if blockMap, ok := block.(map[string]interface{}); ok {
+						if blockMap, ok := block.(map[string]any); ok {
 							if blockMap["type"] == "text" {
-								convertedContent = append(convertedContent, map[string]interface{}{
+								convertedContent = append(convertedContent, map[string]any{
 									"type": "text",
 									"text": blockMap["text"],
 								})
 							} else if blockMap["type"] == "image" {
-								if source, ok := blockMap["source"].(map[string]interface{}); ok {
+								if source, ok := blockMap["source"].(map[string]any); ok {
 									imageURL := fmt.Sprintf("data:%s;base64,%s", source["media_type"], source["data"])
-									convertedContent = append(convertedContent, map[string]interface{}{
+									convertedContent = append(convertedContent, map[string]any{
 										"type": "image_url",
 										"image_url": map[string]string{
 											"url": imageURL,
@@ -505,9 +506,9 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 			var textParts []string
 			var toolCalls []OpenAIToolCall
 
-			if contentBlocks, ok := message.Content.([]interface{}); ok {
+			if contentBlocks, ok := message.Content.([]any); ok {
 				for _, block := range contentBlocks {
-					if blockMap, ok := block.(map[string]interface{}); ok {
+					if blockMap, ok := block.(map[string]any); ok {
 						if blockMap["type"] == "text" {
 							textParts = append(textParts, blockMap["text"].(string))
 						} else if blockMap["type"] == "tool_use" {
@@ -575,7 +576,7 @@ func convertClaudeToOpenAI(claudeReq ClaudeRequest, modelName string) OpenAIRequ
 		if claudeReq.ToolChoice.Type == "auto" || claudeReq.ToolChoice.Type == "any" {
 			openaiReq.ToolChoice = "auto"
 		} else if claudeReq.ToolChoice.Type == "tool" {
-			openaiReq.ToolChoice = map[string]interface{}{
+			openaiReq.ToolChoice = map[string]any{
 				"type": "function",
 				"function": map[string]string{
 					"name": claudeReq.ToolChoice.Name,
@@ -607,9 +608,9 @@ func convertOpenAIToClaudeResponse(openaiResp OpenAIResponse, model string) Clau
 		// 添加工具调用
 		if len(choice.Message.ToolCalls) > 0 {
 			for _, toolCall := range choice.Message.ToolCalls {
-				var input map[string]interface{}
+				var input map[string]any
 				if err := json.Unmarshal([]byte(toolCall.Function.Arguments), &input); err != nil {
-					input = make(map[string]interface{})
+					input = make(map[string]any)
 				}
 
 				contentBlocks = append(contentBlocks, ClaudeContentBlock{
@@ -722,13 +723,13 @@ func processOpenAIStreamResponse(writer gin.ResponseWriter, reader io.Reader, tr
 		}
 
 		// 解析OpenAI流式数据
-		var openaiChunk map[string]interface{}
+		var openaiChunk map[string]any
 		if err := json.Unmarshal([]byte(data), &openaiChunk); err != nil {
 			continue // 忽略解析错误的chunk
 		}
 
 		// 提取usage信息
-		if usage, ok := openaiChunk["usage"].(map[string]interface{}); ok {
+		if usage, ok := openaiChunk["usage"].(map[string]any); ok {
 			if promptTokens, ok := usage["prompt_tokens"].(float64); ok {
 				totalPromptTokens = int(promptTokens)
 			}
@@ -738,23 +739,23 @@ func processOpenAIStreamResponse(writer gin.ResponseWriter, reader io.Reader, tr
 		}
 
 		// 处理流式数据
-		if choices, ok := openaiChunk["choices"].([]interface{}); ok && len(choices) > 0 {
-			if choice, ok := choices[0].(map[string]interface{}); ok {
+		if choices, ok := openaiChunk["choices"].([]any); ok && len(choices) > 0 {
+			if choice, ok := choices[0].(map[string]any); ok {
 				// 获取finish_reason
 				if reason, ok := choice["finish_reason"].(string); ok && reason != "" {
 					finishReason = reason
 				}
 
-				if delta, ok := choice["delta"].(map[string]interface{}); ok {
+				if delta, ok := choice["delta"].(map[string]any); ok {
 					// 收集文本内容
 					if content, ok := delta["content"].(string); ok {
 						responseContent.WriteString(content)
 					}
 
 					// 收集工具调用增量数据
-					if toolCallsData, ok := delta["tool_calls"].([]interface{}); ok {
+					if toolCallsData, ok := delta["tool_calls"].([]any); ok {
 						for _, tc := range toolCallsData {
-							if tcMap, ok := tc.(map[string]interface{}); ok {
+							if tcMap, ok := tc.(map[string]any); ok {
 								index := int(tcMap["index"].(float64))
 
 								// 确保toolCalls数组足够长
@@ -768,7 +769,7 @@ func processOpenAIStreamResponse(writer gin.ResponseWriter, reader io.Reader, tr
 									toolCalls[index].Type = "function"
 								}
 
-								if function, ok := tcMap["function"].(map[string]interface{}); ok {
+								if function, ok := tcMap["function"].(map[string]any); ok {
 									if name, ok := function["name"].(string); ok {
 										toolCalls[index].Function.Name = name
 									}
@@ -805,12 +806,12 @@ func processOpenAIStreamResponse(writer gin.ResponseWriter, reader io.Reader, tr
 		// 添加工具调用内容
 		for _, toolCall := range toolCalls {
 			if toolCall.ID != "" && toolCall.Function.Name != "" {
-				var input map[string]interface{}
+				var input map[string]any
 				if toolCall.Function.Arguments != "" {
 					json.Unmarshal([]byte(toolCall.Function.Arguments), &input)
 				}
 				if input == nil {
-					input = make(map[string]interface{})
+					input = make(map[string]any)
 				}
 
 				contentBlocks = append(contentBlocks, ClaudeContentBlock{
@@ -904,24 +905,24 @@ func generateRandomID() string {
 }
 
 // sendEvent 发送SSE事件
-func (st *StreamTransformer) sendEvent(writer gin.ResponseWriter, eventType string, data interface{}) {
+func (st *StreamTransformer) sendEvent(writer gin.ResponseWriter, eventType string, data any) {
 	jsonData, _ := json.Marshal(data)
 	fmt.Fprintf(writer, "event: %s\ndata: %s\n\n", eventType, jsonData)
 	writer.Flush()
 }
 
 // processChunk 处理单个流式chunk
-func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk map[string]interface{}) {
+func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk map[string]any) {
 	// 初始化消息开始事件
 	if !st.initialized {
-		st.sendEvent(writer, "message_start", map[string]interface{}{
+		st.sendEvent(writer, "message_start", map[string]any{
 			"type": "message_start",
-			"message": map[string]interface{}{
+			"message": map[string]any{
 				"id":          st.messageID,
 				"type":        "message",
 				"role":        "assistant",
 				"model":       st.model,
-				"content":     []interface{}{},
+				"content":     []any{},
 				"stop_reason": nil,
 				"usage": map[string]int{
 					"input_tokens":  0,
@@ -930,10 +931,10 @@ func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk
 			},
 		})
 
-		st.sendEvent(writer, "content_block_start", map[string]interface{}{
+		st.sendEvent(writer, "content_block_start", map[string]any{
 			"type":  "content_block_start",
 			"index": 0,
-			"content_block": map[string]interface{}{
+			"content_block": map[string]any{
 				"type": "text",
 				"text": "",
 			},
@@ -943,15 +944,15 @@ func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk
 	}
 
 	// 处理choices数组
-	if choices, ok := openaiChunk["choices"].([]interface{}); ok && len(choices) > 0 {
-		if choice, ok := choices[0].(map[string]interface{}); ok {
-			if delta, ok := choice["delta"].(map[string]interface{}); ok {
+	if choices, ok := openaiChunk["choices"].([]any); ok && len(choices) > 0 {
+		if choice, ok := choices[0].(map[string]any); ok {
+			if delta, ok := choice["delta"].(map[string]any); ok {
 				// 处理文本内容
 				if content, ok := delta["content"].(string); ok {
-					st.sendEvent(writer, "content_block_delta", map[string]interface{}{
+					st.sendEvent(writer, "content_block_delta", map[string]any{
 						"type":  "content_block_delta",
 						"index": 0,
-						"delta": map[string]interface{}{
+						"delta": map[string]any{
 							"type": "text_delta",
 							"text": content,
 						},
@@ -959,9 +960,9 @@ func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk
 				}
 
 				// 处理工具调用
-				if toolCalls, ok := delta["tool_calls"].([]interface{}); ok {
+				if toolCalls, ok := delta["tool_calls"].([]any); ok {
 					for _, tc := range toolCalls {
-						if tcMap, ok := tc.(map[string]interface{}); ok {
+						if tcMap, ok := tc.(map[string]any); ok {
 							st.processToolCallDelta(writer, tcMap)
 						}
 					}
@@ -972,7 +973,7 @@ func (st *StreamTransformer) processChunk(writer gin.ResponseWriter, openaiChunk
 }
 
 // processToolCallDelta 处理工具调用增量
-func (st *StreamTransformer) processToolCallDelta(writer gin.ResponseWriter, tcDelta map[string]interface{}) {
+func (st *StreamTransformer) processToolCallDelta(writer gin.ResponseWriter, tcDelta map[string]any) {
 	index := int(tcDelta["index"].(float64))
 
 	// 初始化工具调用状态
@@ -993,7 +994,7 @@ func (st *StreamTransformer) processToolCallDelta(writer gin.ResponseWriter, tcD
 		toolCall.ID = id
 	}
 
-	if function, ok := tcDelta["function"].(map[string]interface{}); ok {
+	if function, ok := tcDelta["function"].(map[string]any); ok {
 		if name, ok := function["name"].(string); ok {
 			toolCall.Name = name
 		}
@@ -1008,26 +1009,26 @@ func (st *StreamTransformer) processToolCallDelta(writer gin.ResponseWriter, tcD
 		toolCall.ClaudeIndex = st.contentBlockIndex
 		toolCall.Started = true
 
-		st.sendEvent(writer, "content_block_start", map[string]interface{}{
+		st.sendEvent(writer, "content_block_start", map[string]any{
 			"type":  "content_block_start",
 			"index": toolCall.ClaudeIndex,
-			"content_block": map[string]interface{}{
+			"content_block": map[string]any{
 				"type":  "tool_use",
 				"id":    toolCall.ID,
 				"name":  toolCall.Name,
-				"input": map[string]interface{}{},
+				"input": map[string]any{},
 			},
 		})
 	}
 
 	// 如果有新的参数内容，发送增量事件
 	if toolCall.Started {
-		if function, ok := tcDelta["function"].(map[string]interface{}); ok {
+		if function, ok := tcDelta["function"].(map[string]any); ok {
 			if args, ok := function["arguments"].(string); ok {
-				st.sendEvent(writer, "content_block_delta", map[string]interface{}{
+				st.sendEvent(writer, "content_block_delta", map[string]any{
 					"type":  "content_block_delta",
 					"index": toolCall.ClaudeIndex,
-					"delta": map[string]interface{}{
+					"delta": map[string]any{
 						"type":         "input_json_delta",
 						"partial_json": args,
 					},
@@ -1040,7 +1041,7 @@ func (st *StreamTransformer) processToolCallDelta(writer gin.ResponseWriter, tcD
 // sendFinalEvents 发送最终事件
 func (st *StreamTransformer) sendFinalEvents(writer gin.ResponseWriter) {
 	// 发送内容块结束事件
-	st.sendEvent(writer, "content_block_stop", map[string]interface{}{
+	st.sendEvent(writer, "content_block_stop", map[string]any{
 		"type":  "content_block_stop",
 		"index": 0,
 	})
@@ -1048,7 +1049,7 @@ func (st *StreamTransformer) sendFinalEvents(writer gin.ResponseWriter) {
 	// 发送所有工具调用的结束事件
 	for _, toolCall := range st.toolCalls {
 		if toolCall.Started {
-			st.sendEvent(writer, "content_block_stop", map[string]interface{}{
+			st.sendEvent(writer, "content_block_stop", map[string]any{
 				"type":  "content_block_stop",
 				"index": toolCall.ClaudeIndex,
 			})
@@ -1056,9 +1057,9 @@ func (st *StreamTransformer) sendFinalEvents(writer gin.ResponseWriter) {
 	}
 
 	// 发送消息增量事件（包含停止原因）
-	st.sendEvent(writer, "message_delta", map[string]interface{}{
+	st.sendEvent(writer, "message_delta", map[string]any{
 		"type": "message_delta",
-		"delta": map[string]interface{}{
+		"delta": map[string]any{
 			"stop_reason":   "end_turn",
 			"stop_sequence": nil,
 		},
@@ -1068,7 +1069,7 @@ func (st *StreamTransformer) sendFinalEvents(writer gin.ResponseWriter) {
 	})
 
 	// 发送消息停止事件
-	st.sendEvent(writer, "message_stop", map[string]interface{}{
+	st.sendEvent(writer, "message_stop", map[string]any{
 		"type": "message_stop",
 	})
 }

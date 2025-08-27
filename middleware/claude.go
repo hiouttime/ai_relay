@@ -20,7 +20,7 @@ type SystemMessage struct {
 
 // RequestBody Claude API请求体结构
 type RequestBody struct {
-	System interface{} `json:"system"`
+	System any `json:"system"`
 }
 
 // ClaudeCodeAuth API Key鉴权中间件
@@ -157,8 +157,8 @@ func hasClaudeCodeSystemPrompt(c *gin.Context) bool {
 	}
 
 	// 处理数组格式
-	if systemArray, ok := requestBody.System.([]interface{}); ok && len(systemArray) > 0 {
-		if firstItem, ok := systemArray[0].(map[string]interface{}); ok {
+	if systemArray, ok := requestBody.System.([]any); ok && len(systemArray) > 0 {
+		if firstItem, ok := systemArray[0].(map[string]any); ok {
 			// 检查第一个元素是否包含 Claude Code 提示词
 			if itemType, exists := firstItem["type"]; exists && itemType == "text" {
 				if text, exists := firstItem["text"]; exists && text == constant.ClaudeCodeSystemPrompt {

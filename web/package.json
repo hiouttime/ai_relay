@@ -1,6 +1,6 @@
 {
   "name": "@ripper/claude-code-relay",
-  "version": "0.1.4",
+  "version": "0.1.8",
   "type": "module",
   "scripts": {
     "dev:mock": "vite --open --mode mock",

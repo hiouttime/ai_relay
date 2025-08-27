@@ -1,11 +1,10 @@
 package model
 
 //gorm中重新格式化json时间数据格式返回给前端
-import "time"
-
 import (
 	"database/sql/driver"
 	"fmt"
+	"time"
 )
 
 const timeFormat = "2006-01-02 15:04:05"
@@ -46,7 +45,7 @@ func (t Time) Value() (driver.Value, error) {
 	return ti, nil
 }
 
-func (t *Time) Scan(v interface{}) error {
+func (t *Time) Scan(v any) error {
 	value, ok := v.(time.Time)
 	if ok {
 		*t = Time(value)

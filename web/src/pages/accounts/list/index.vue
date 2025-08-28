@@ -504,6 +504,7 @@ const formData = reactive<AccountCreateParams & AccountUpdateParams>({
   is_max: false,
   access_token: '',
   refresh_token: '',
+  expires_at: 0,
   today_usage_count: 0,
 });
 
@@ -675,6 +676,7 @@ const handleEdit = (item: Account) => {
     is_max: item.is_max,
     access_token: item.access_token || '', // 现在回填访问令牌
     refresh_token: item.refresh_token || '', // 现在回填刷新令牌
+    expires_at: item.expires_at || 0,
     today_usage_count: item.today_usage_count,
   });
 
@@ -866,6 +868,7 @@ const handleExchangeCode = async () => {
     // 自动回填令牌
     formData.access_token = result.access_token;
     formData.refresh_token = result.refresh_token;
+    formData.expires_at = result.expires_at || 0;
 
     MessagePlugin.success('授权成功，令牌已自动填入');
 

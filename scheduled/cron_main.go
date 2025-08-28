@@ -214,20 +214,36 @@ func (s *CronService) checkAndRefreshExpiredTokens() {
 
 	common.SysLog(fmt.Sprintf("Checking tokens for %d Claude accounts", len(accounts)))
 	
+	needRefreshCount := 0
+	refreshedCount := 0
 	failedCount := 0
+	now := time.Now().Unix()
+	
 	for _, account := range accounts {
-		if _, err := relay.GetValidAccessToken(&account); err != nil {
-			common.SysError(fmt.Sprintf("Failed to refresh token for account %s (ID: %d): %v", 
-				account.Name, account.ID, err))
-			failedCount++
+		// 检查是否需要刷新（提前5分钟）
+		expiresAt := int64(account.ExpiresAt)
+		if expiresAt > 0 && now >= (expiresAt-300) {
+			needRefreshCount++
+			common.SysLog(fmt.Sprintf("Account %s (ID: %d) token expires at %d, needs refresh", 
+				account.Name, account.ID, expiresAt))
+			
+			if _, err := relay.GetValidAccessToken(&account); err != nil {
+				common.SysError(fmt.Sprintf("Failed to refresh token for account %s (ID: %d): %v", 
+					account.Name, account.ID, err))
+				failedCount++
+			} else {
+				refreshedCount++
+				common.SysLog(fmt.Sprintf("Successfully refreshed token for account %s (ID: %d)", 
+					account.Name, account.ID))
+			}
 		}
 	}
 
-	if failedCount > 0 {
-		common.SysLog(fmt.Sprintf("Token refresh completed with %d failures out of %d accounts", 
-			failedCount, len(accounts)))
+	if needRefreshCount == 0 {
+		common.SysLog(fmt.Sprintf("Checked %d accounts, no tokens need refreshing", len(accounts)))
 	} else {
-		common.SysLog(fmt.Sprintf("Successfully refreshed tokens for all %d accounts", len(accounts)))
+		common.SysLog(fmt.Sprintf("Token refresh summary: %d accounts checked, %d needed refresh, %d refreshed, %d failed", 
+			len(accounts), needRefreshCount, refreshedCount, failedCount))
 	}
 }
 

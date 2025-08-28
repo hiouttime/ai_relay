@@ -129,6 +129,10 @@ func (s *AccountService) UpdateAccount(id uint, req *model.UpdateAccountRequest,
 		account.RefreshToken = req.RefreshToken
 	}
 
+	if req.ExpiresAt > 0 {
+		account.ExpiresAt = req.ExpiresAt
+	}
+
 	// 更新TodayUsageCount字段，如果请求中设置了该字段，则更新
 	if req.TodayUsageCount > 0 {
 		account.TodayUsageCount = req.TodayUsageCount

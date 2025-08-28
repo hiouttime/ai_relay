@@ -96,6 +96,7 @@ type UpdateAccountRequest struct {
 	IsMax           bool   `json:"is_max"` // 是否是max账号
 	AccessToken     string `json:"access_token"`
 	RefreshToken    string `json:"refresh_token"`
+	ExpiresAt       int    `json:"expires_at" binding:"min=0"`
 	TodayUsageCount int    `json:"today_usage_count"` // 今日使用次数
 }
 

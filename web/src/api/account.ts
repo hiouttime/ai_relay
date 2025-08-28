@@ -94,6 +94,7 @@ export interface AccountUpdateParams {
   is_max?: boolean;
   access_token?: string;
   refresh_token?: string;
+  expires_at?: number;
   today_usage_count?: number;
 }
 

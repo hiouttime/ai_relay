@@ -719,6 +719,7 @@ const handleFormConfirm = async () => {
         is_max: formData.is_max,
         access_token: formData.access_token,
         refresh_token: formData.refresh_token,
+        expires_at: formData.expires_at,
         today_usage_count: formData.today_usage_count,
       };
       await updateAccount(editingItem.value.id, updateData);

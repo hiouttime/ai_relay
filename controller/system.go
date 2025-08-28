@@ -75,7 +75,8 @@ func GetDashboard(c *gin.Context) {
 
 // ManualResetStats 手动重置统计数据（测试用）
 func ManualResetStats(c *gin.Context) {
-	if scheduled.GlobalCronService == nil {
+	cronService := scheduled.GetInstance()
+	if cronService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "定时任务服务未初始化",
 			"code":  constant.InternalServerError,
@@ -83,7 +84,7 @@ func ManualResetStats(c *gin.Context) {
 		return
 	}
 
-	err := scheduled.GlobalCronService.ManualResetStats()
+	err := cronService.ManualTrigger("reset_daily")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "重置统计数据失败: " + err.Error(),
@@ -100,7 +101,8 @@ func ManualResetStats(c *gin.Context) {
 
 // ManualCleanLogs 手动清理过期日志（测试用）
 func ManualCleanLogs(c *gin.Context) {
-	if scheduled.GlobalCronService == nil {
+	cronService := scheduled.GetInstance()
+	if cronService == nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "定时任务服务未初始化",
 			"code":  constant.InternalServerError,
@@ -108,7 +110,7 @@ func ManualCleanLogs(c *gin.Context) {
 		return
 	}
 
-	deletedCount, err := scheduled.GlobalCronService.ManualCleanExpiredLogs()
+	err := cronService.ManualTrigger("clean_logs")
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "清理日志失败: " + err.Error(),
@@ -120,8 +122,5 @@ func ManualCleanLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"message": "日志清理成功",
 		"code":    constant.Success,
-		"data": gin.H{
-			"deleted_count": deletedCount,
-		},
 	})
 }

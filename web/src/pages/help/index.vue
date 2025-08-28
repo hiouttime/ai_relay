@@ -574,36 +574,40 @@ const supportedSystems = [
   { key: 'linux', name: 'Linux / WSL2', icon: 'logo-codepen' },
 ];
 
-// 获取基础URL前缀
+// 获取 API 基础地址
 const getBaseUrlPrefix = () => {
-  let origin = '';
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (!apiUrl || apiUrl === '/') {
+    let origin = '';
 
-  if (window.location.origin) {
-    origin = window.location.origin;
-  } else {
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const port = window.location.port;
-
-    origin = `${protocol}//${hostname}`;
-
-    if (port && ((protocol === 'http:' && port !== '80') || (protocol === 'https:' && port !== '443'))) {
-      origin += `:${port}`;
-    }
-  }
-
-  if (!origin) {
-    const currentUrl = window.location.href;
-    const pathStart = currentUrl.indexOf('/', 8);
-    if (pathStart !== -1) {
-      origin = currentUrl.substring(0, pathStart);
+    if (window.location.origin) {
+      origin = window.location.origin;
     } else {
-      console.warn('无法获取完整的 origin，将使用相对路径');
-      return '';
-    }
-  }
+      const protocol = window.location.protocol;
+      const hostname = window.location.hostname;
+      const port = window.location.port;
 
-  return origin;
+      origin = `${protocol}//${hostname}`;
+
+      if (port && ((protocol === 'http:' && port !== '80') || (protocol === 'https:' && port !== '443'))) {
+        origin += `:${port}`;
+      }
+    }
+
+    if (!origin) {
+      const currentUrl = window.location.href;
+      const pathStart = currentUrl.indexOf('/', 8);
+      if (pathStart !== -1) {
+        origin = currentUrl.substring(0, pathStart);
+      } else {
+        console.warn('无法获取完整的 origin，将使用相对路径');
+        return '';
+      }
+    }
+
+    return origin;
+  }
+  return apiUrl;
 };
 
 // 当前基础URL - Claude Code

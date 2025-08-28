@@ -28,7 +28,13 @@ func SetupLogger() {
 	ErrorLogger = log.New(file, "[ERROR] ", log.Ldate|log.Ltime|log.Lshortfile)
 }
 
-func SysLog(message string) {
+func SysLog(format string, args ...interface{}) {
+	var message string
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	} else {
+		message = format
+	}
 	logMessage := fmt.Sprintf("[SYSTEM] %s", message)
 	log.Println(logMessage)
 	if InfoLogger != nil {
@@ -36,7 +42,13 @@ func SysLog(message string) {
 	}
 }
 
-func SysError(message string) {
+func SysError(format string, args ...interface{}) {
+	var message string
+	if len(args) > 0 {
+		message = fmt.Sprintf(format, args...)
+	} else {
+		message = format
+	}
 	logMessage := fmt.Sprintf("[ERROR] %s", message)
 	log.Println(logMessage)
 	if ErrorLogger != nil {

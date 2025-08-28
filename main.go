@@ -55,8 +55,10 @@ func main() {
 	}
 
 	// 初始化定时任务服务
-	scheduled.InitCronService()
-	defer scheduled.StopCronService()
+	if err := scheduled.Init(); err != nil {
+		common.FatalLog("failed to initialize cron service: " + err.Error())
+	}
+	defer scheduled.Shutdown()
 
 	// 初始化HTTP服务器
 	server := gin.New()
@@ -107,7 +109,7 @@ func main() {
 	common.SysLog("Shutting down server...")
 
 	// 停止定时任务服务
-	scheduled.StopCronService()
+	scheduled.Shutdown()
 
 	common.SysLog("Server stopped gracefully")
 }
